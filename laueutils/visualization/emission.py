@@ -70,11 +70,12 @@ def plotfluoh5(h5path: str,
 
     with h5py.File(h5path, 'r') as h5f:
         # Load fluorescence data and normalize if needed
-        data  = h5f[pathfluo][()].astype(np.float64) 
+        shape = sample_x.shape
+        data  = h5f[pathfluo][0:shape[0]*shape[1]].astype(np.float64) 
         dataset = pathfluo.split('/')[0]
 
         if normalize:
-            mon = h5f[f'{dataset}/measurement/mon'][()]
+            mon = h5f[f'{dataset}/measurement/mon'][0:shape[0]*shape[1]]
             data /= mon / 10**2
         
         if file_indices is not None:
@@ -193,9 +194,9 @@ def plotxeolh5(h5path: str,
 
     if channel is None and roi is None:
         raise TypeError("'channel' (int) or 'roi' (tuple) need to be provided")
-    
+    shape = sample_x.shape
     with h5py.File(h5path, 'r') as h5f:
-        all_data = h5f[pathxeol][()].astype(np.float64)
+        all_data = h5f[pathxeol][0:shape[0]*shape[1]].astype(np.float64)
         dataset = pathxeol.split('/')[0]
         
         if pathref is not None:
@@ -216,7 +217,7 @@ def plotxeolh5(h5path: str,
             wavelen = h5f[f'{dataset}/measurement/qepro_det1'][0, channel]
         
         if normalize:
-            mon = h5f[f'{dataset}/measurement/mon'][()]
+            mon = h5f[f'{dataset}/measurement/mon'][0:shape[0]*shape[1]]
             data /= mon / 10**4
     
     mean = np.nanmean(data)

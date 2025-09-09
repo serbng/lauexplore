@@ -4,7 +4,7 @@ from LaueTools.CrystalParameters import Prepare_Grain
 from LaueTools.lauecore import SimulateLaue_full_np
 from LaueTools.dict_LaueTools import dict_Materials, dict_CCD
 
-def simulate_pattern(material, orientation, calibration_parameters, **kwargs):
+def simulate(material, orientation, calibration_parameters, **kwargs):
     """Simulate a Laue pattern
 
     Args:

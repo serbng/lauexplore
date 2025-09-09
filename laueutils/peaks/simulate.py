@@ -4,32 +4,46 @@ from LaueTools.CrystalParameters import Prepare_Grain
 from LaueTools.lauecore import SimulateLaue_full_np
 from LaueTools.dict_LaueTools import dict_Materials, dict_CCD
 
-def simulate(material, orientation, calibration_parameters, **kwargs):
-    """Simulate a Laue pattern given the material, its orientation matrix and the calibration parameters.
+def simulate_pattern(material, orientation, calibration_parameters, **kwargs):
+    """Simulate a Laue pattern
 
-    Parameters
-    ----------
-    material                        (str): Name of the material. Should match a key inside the LaueTools materials dictionary.
-                                           If the material is not present, it is possible to pass to the function your own.
-                                           See the 'materials_dictionary' in the keyword arguments.
-    orientation              (np.ndarray): Array with shape (3,3). UB matrix.
-    calibration_parameters  (list[float]): 5-parameter list containing the calibration parameters: detector distance, xcen,
-                                           ycen, xbet, xgam.
+    Args:
+        material                (str): Material name. Must be a key of the materials dictionary inside LaueTools.
+                                       If not, the kwarg 'material_dictionary' is expected to be passed with the
+                                       lattice parameters of the material.
+        orientation      (np.ndarray): 3 by 3 matrix representing the orientation of the crystal in a reference
+                                       system of the BM32 experimental hutch. That is, where
+                                           * u_x : direction of the X-ray beam
+                                           * u_z : direction towards the detector
+                                           * u_y : - u_x cross u_z
+        calibration_parameters (list): List of the five calibration parameters:
+                                           *  detector distance: distance between the detector and the sample
+                                           * x_center, y_center: position that we encounter on the detector if, starting from the sample, 
+                                                                 we trace a vertical line. Takes into account in-plane shifts of the camera.
+                                           *    x_beta, x_gamma: deviation angles of the stabilizing stage from the flat position. Takes
+                                                                 into account the shift of the relative angle between the sample and the beam.
 
-    Returns
-    ----------
-    result           (np.ndarray): Array with shape (N, 4), where N is the number of peaks. The columns contain respectively
-                                   x_position, y_position, twotheta, chi.
-
-    Keyword arguments
-    ----------
-    Emin                  (float):
-    Emax                  (float):
-    materials_dictionary   (dict):
-    camera_label            (str):
-    detector_diameter     (float):
+    Returns:
+        result (pandas.DataFrame): dataframe containing the result. Has columns (h,k,l,2θ,χ,X,Y,Energy).
+                                       (h,k,l) : Miller indices of the reflection
+                                       (2θ,χ)  : Scattering angles
+                                       (X,Y)   : Position of the reflection on the detector
+                                       Energy  : Energy of the reflection in keV
+        
+    Kwargs:
+        Emin               (float): Minimum energy of the polychromatic X-ray beam in keV. Default value 5
+        Emax               (float): Maximum energy of the polychromatic X-ray beam in keV. Default value 5
+        material_dictionary (dict): Dictionary containing information of materials lattice parameters.
+                                        Structure:
+                                            * key    (str): material name
+                                            * value (list): ["material", [a,b,c,α,β,γ], "extintion_rule"]
+                                        Default value:
+                                            Dictionary of materials inside the LaueTools library.
+        camera_label         (str): Must be in the LaueTools dictionary containing the detector parameters.
+                                    Defaults to "sCMOS", that is the camera currently in the beamline as of
+                                    July 2025.
+        detector_diameter  (float): Defaults to 148 [mm].
     """
-    
     # Simulation parameters
     Emin = kwargs.pop("Emin",  5)
     Emax = kwargs.pop("Emax", 25)
@@ -38,8 +52,8 @@ def simulate(material, orientation, calibration_parameters, **kwargs):
     
     # Camera-related parameters
     camera_label      = kwargs.pop("camera_label", "sCMOS")
-    detector_diameter = kwargs.pop("detector_diameter", 148.1212) * 1.75 # Detector diameter is not present in the dict_CCD["sCMOS"] for some reason
-    pixel_size        = dict_CCD[camera_label][1]
+    detector_diameter = kwargs.pop("detector_diameter", 148.1212) * 1.75 # Detector diameter is not present in
+    pixel_size        = dict_CCD[camera_label][1]                        # the dict_CCD["sCMOS"] for some reason
     frame_shape       = dict_CCD[camera_label][0]
     
     # Actual simulation
@@ -50,22 +64,29 @@ def simulate(material, orientation, calibration_parameters, **kwargs):
                                   dictmaterials    = material_dictionary,
                                   kf_direction     = 'Z>0', # default value
                                   removeharmonics  = 0)     # default value
-    
-    # discarding 2theta, chi, miller indices, reflection energy
-    twotheta   = result[0]
-    chi        = result[1]
-    x_position = result[3]
-    y_position = result[4]
-    
-    # Some simulated reflection fall outside of the detector, remove them
-    to_keep  = np.ones(len(x_position), dtype=bool)
-    to_keep &= (x_position > 0) & (x_position < frame_shape[1])
-    to_keep &= (y_position > 0) & (y_position < frame_shape[0])
-    
+    # Convert from tuple to list
+    result = list(result)
 
-    twotheta   = twotheta[to_keep]
-    chi        = chi[to_keep]
-    x_position = x_position[to_keep]
-    y_position = y_position[to_keep]
+    # Some simulated reflection fall outside of the detector, remove them
+    x, y = result[3], result[4]
+    to_keep  = (x > 0) & (x < frame_shape[1])
+    to_keep &= (y > 0) & (y < frame_shape[0])
     
-    return np.vstack((x_position, y_position, twotheta, chi)).T
+    # Keep only the peaks that fall within the detector and round them
+    for i in range(len(result)):
+        result[i] = result[i][to_keep]
+        result[i] = np.round(result[i], decimals=3)
+    
+    # Preparing dataframe
+    simulation_result = {
+        "h": result[2][:,0],
+        "k": result[2][:,1],
+        "l": result[2][:,2],
+        "2θ": result[0],
+        "χ": result[1],
+        "X": result[3],
+        "Y": result[4],
+        "Energy": result[5]
+    }
+    
+    return pd.DataFrame.from_dict(simulation_result).convert_dtypes()

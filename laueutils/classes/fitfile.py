@@ -410,7 +410,7 @@ class FitFile:
     def lattice_parameters(self):
         columns = ["a'", "b'", "c'", "α'", "β'", "γ'", "b/a", "c/a"]
         data = np.concatenate(
-                (self.new_lattice_parameters, self.boa, self.coa)
+                ( self.new_lattice_parameters, np.array([self.boa, self.coa]) )
             ).reshape(1,-1)
         
         return DataFrame(data=data, columns=columns)

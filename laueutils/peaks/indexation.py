@@ -17,7 +17,7 @@ def refinement_dict_from_kwargs(**kwargs):
         'central spots indices':      kwargs.pop("spotset_A", [0]),  # spots set A 
         #number of most intense spot candidate to have a recognisable distance
         'NBMAXPROBED':                kwargs.pop("spotset_B", 10),
-        'MATCHINGRATE_THRESHOLD_IAL': kwargs.pop("LUT_matching_rate", 2)
+        'MATCHINGRATE_THRESHOLD_IAL': kwargs.pop("LUT_matching_rate", 2),
         'MATCHINGRATE_ANGLE_TOL':     kwargs.pop("LUT_tolerance_angle", 0.2),
         'MinimumMatchingRate':        kwargs.pop("LUT_matching_rate", 5),
         'MinimumNumberMatches':       kwargs.pop("min_number_matches", 15),

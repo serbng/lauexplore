@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 from LaueTools.indexingSpotsSet import spotsset
 #from dict_LaueTools import dict_CCD as camera_dictionary
@@ -10,23 +11,23 @@ def refinement_dict_from_kwargs(**kwargs):
     """ Build the refinement dictionary from kwargs and return eventual remaining ones"""
     refinement_dict = {
         # I use kwargs.get for the entries that are also an input of the indexing function
-        'AngleTolLUT':                kwargs.pop("lut_angle_tol", 0.5),   # Tolerance angle [deg]
-        'nlutmax'    :                kwargs.get("lut_max_index", DEFAULT_LUT_MAX_INDEX), # Maximum miller index checked in the LUT
-        'list matching tol angles':   kwargs.get("matching_angle_tols", DEFAULT_MATCHING_ANGLE_TOLS),
-        'central spots indices':      kwargs.pop("spot_set_A", [0]),  # spots set A 
+        'AngleTolLUT':                kwargs.pop("LUT_tolerance_angle", 0.5),   # Tolerance angle [deg]
+        'nlutmax'    :                kwargs.get("nLUTmax", DEFAULT_LUT_MAX_INDEX), # Maximum miller index checked in the LUT
+        'list matching tol angles':   kwargs.get("tolerance_angles", DEFAULT_MATCHING_ANGLE_TOLS),
+        'central spots indices':      kwargs.pop("spotset_A", [0]),  # spots set A 
         #number of most intense spot candidate to have a recognisable distance
-        'NBMAXPROBED':                kwargs.pop("spot_set_B", 10),
-        'MATCHINGRATE_ANGLE_TOL':     kwargs.pop("MATCHINGRATE_ANGLE_TOL", 0.2),
-        'MinimumMatchingRate':        kwargs.pop("MinimumMatchingRate", 5),
-        'MinimumNumberMatches':       kwargs.pop("nb_matches_min", 15),
+        'NBMAXPROBED':                kwargs.pop("spotset_B", 10),
+        'MATCHINGRATE_THRESHOLD_IAL': kwargs.pop("LUT_matching_rate", 2)
+        'MATCHINGRATE_ANGLE_TOL':     kwargs.pop("LUT_tolerance_angle", 0.2),
+        'MinimumMatchingRate':        kwargs.pop("LUT_matching_rate", 5),
+        'MinimumNumberMatches':       kwargs.pop("min_number_matches", 15),
         'UseIntensityWeights':        kwargs.pop("UseIntensityWeights", False),
         'nbSpotsToIndex':             kwargs.pop("nb_spots_max", 10000),
-        'MATCHINGRATE_THRESHOLD_IAL': kwargs.pop("MATCHINGRATE_THRESHOLD_IAL", 2)
     }
 
     return refinement_dict, kwargs
 
-def index(peaks, material, **kwargs):
+def index(peaks, material, filename, dirnameout=None, **kwargs):
     """ Wrapper of LaueTools.indexingSpotsSet.spotsset.IndexSpotsSet for easier indexation.
 
     Parameters
@@ -39,7 +40,7 @@ def index(peaks, material, **kwargs):
     spotset = spotsset()
 
     # Set mandatory positional arguments for the LaueTools indexer
-    if isinstance(peaks, str):
+    if isinstance(peaks, (str, Path)):
         spotset.importdatafromfile(peaks)
         
     elif isinstance(peaks, np.ndarray):
@@ -50,15 +51,19 @@ def index(peaks, material, **kwargs):
         # Copied (excluding the existance checks) from
         # LaueTools.indexingSpotsSet.spotsset.IndexSpotsSet.importdatafromfile()
         # Lines 446 - 481
+        spotset.set_dict_spotprops(peaks)
         calibration_dictionary     = kwargs.pop("calibration_dictionary")
         spotset.CCDcalibdict       = calibration_dictionary
         spotset.CCDLabel           = calibration_dictionary["CCDLabel"]
         spotset.pixelsize          = calibration_dictionary["pixelsize"]
         spotset.framedim           = calibration_dictionary["framedim"]
         spotset.dim                = calibration_dictionary["framedim"]
-        spotset.detectordiameter   = calibration_dictionary["kf_direction"]
+        spotset.detectordiameter   = calibration_dictionary["detectordiameter"]
         spotset.detectorparameters = calibration_dictionary["CCDCalibParams"]
-        spotset.nbspots            = len(peaks)        
+        spotset.kf_direction       = calibration_dictionary["kf_direction"]
+        spotset.nbspots            = len(peaks)
+        spotset.filename           = None
+        spotset.updateSimulParameters()
 
     refinement_dict, indexation_kwargs = refinement_dict_from_kwargs(**kwargs)
     
@@ -69,11 +74,11 @@ def index(peaks, material, **kwargs):
     # Additional arguments
     indexation_kwargs.update(
         {
-            "angletol_list":      kwargs.pop("matching_angle_tols", DEFAULT_MATCHING_ANGLE_TOLS),
-            "MatchingRate_List":  kwargs.pop("matching_rates",      DEFAULT_MATCHING_RATES),
-            "nbGrainstoFind":     kwargs.pop("nb_grains", 1),
-            "dirnameout_fitfile": kwargs.pop("outputdir", None),
-            "n_LUT":              kwargs.pop("lut_max_index", DEFAULT_LUT_MAX_INDEX)
+            "angletol_list":      kwargs.pop("angle_tolerances", DEFAULT_MATCHING_ANGLE_TOLS),
+            "MatchingRate_List":  kwargs.pop("matching_rates",   DEFAULT_MATCHING_RATES),
+            "nbGrainstoFind":     kwargs.pop("nb_grains", "max"),
+            "dirnameout_fitfile": Path.cwd() if dirnameout is None else dirnameout,
+            "n_LUT":              kwargs.pop("nLUTmax", DEFAULT_LUT_MAX_INDEX)
         }
     )
 
@@ -81,13 +86,13 @@ def index(peaks, material, **kwargs):
     
 
 
-def check_orientation(peaks, material, orientation, **kwargs):
+def check_orientation(peaks, material, orientation, filename, dirnameout=None, **kwargs):
     kwargs.update(
-        {"spot_set_B": 0,
+        {"spotset_B": 0,
          "previousResults": [1, [orientation], 5, 5]}
     )
 
     try:
-        index(peaks, material, **kwargs)
+        index(peaks, material, filename, dirnameout, **kwargs)
     except:
         pass

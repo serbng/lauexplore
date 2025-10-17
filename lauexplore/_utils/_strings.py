@@ -1,17 +1,14 @@
-from numpy import ndarray
+import numpy as np
 
-def clean_string(string: str, substrings: list):
+def clean_string(string: str, substrings: list) -> str:
     for substring in substrings:
         string = string.replace(substring, "")
     return string
 
-def remove_newline(string: str):
+def remove_newline(string: str) -> str:
     return string.replace("\n", "")
 
-def tabular_data(headers: list, 
-                 items: list, 
-                 data: ndarray, 
-                 width: int = None) -> str:
+def table(headers: list, items: list, data: np.ndarray, width: int = None) -> str:
     """Returns a properly formatted string that contains
     ------------------------------------------------------------------
     |            | headers[0] | headers[1] |     ...    | headers[m] |

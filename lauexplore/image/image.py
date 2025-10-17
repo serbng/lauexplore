@@ -1,10 +1,12 @@
+from typing import Iterable
+from pathlib import Path
 import fabio
 import numpy as np
 import matplotlib.pyplot as plt
 import multiprocess as mp
 
-from ..utils.chunks import linear_chunks # for mosaic
-from ._utils import draw_colorbar
+from .._utils import linear_chunks # for mosaic
+from ..visuals._utils import draw_colorbar
 
 def display_image(data, roi=None, **kwargs):
     """Plot an image.
@@ -102,7 +104,15 @@ def _mosaic_line(line_paths, roi_indices, line_direction):
         # *-----* 
         return np.vstack(line_data[::-1])
 
-def mosaic(paths, num_rows, num_cols, roi_center, roi_boxsize, scan_direction='horizontal', workers=4):
+def mosaic(
+        paths: Iterable[str | Path], 
+        nbrows: int, 
+        nbcols: int, 
+        roi_center: tuple[int, int], 
+        roi_boxsize: tuple[int, int], 
+        scan_direction: str ='horizontal', 
+        workers: int = 4
+    ):
     """Stitch together the same ROI of different images to create a mosaic.
     
     The images are stitched together row by row. So, if ´´´num_cols=10´´´, the images are read in chunks of 10 and
@@ -129,13 +139,13 @@ def mosaic(paths, num_rows, num_cols, roi_center, roi_boxsize, scan_direction='h
     x2 = int(roi_center[1] + roi_boxsize[1] // 2)
 
     if scan_direction == 'horizontal':
-        chunk_size = num_cols
+        chunksize = nbcols
     elif scan_direction =='vertical':
-        chunk_size = num_rows
+        chunksize = nbrows
     else:
         raise(ValueError, "scan_direction must be in {'horizontal', 'vertical'}. " + f"Got {scan_direction}.")
     
-    line_indices = linear_chunks(num_rows * num_cols, chunk_size)
+    line_indices = linear_chunks(nbrows * nbcols, chunksize)
     # Ex.:
     # line_indices = linear_chunks(81 * 81, 81)
     # line_indices

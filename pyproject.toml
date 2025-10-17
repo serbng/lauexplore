@@ -3,12 +3,12 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "lauetools-utils"
-version = "0.1.0"
-description = "Utilities for LaueTools analysis"
+name = "lauexplore"
+version = "1.0.0"
+description = "Interactive visualization of "
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.12"
+requires-python = ">=3.8"
 
 dependencies = [
   "numpy==2.0.*",
@@ -21,14 +21,14 @@ dependencies = [
   "scikit-learn==1.5.*",
   "wxpython==4.2.*",
   "plotly==6.*",
+  "kaleido",
   "anywidget>=0.9",
-  "multiprocess==0.70.18",
   "ipykernel",
   "jupyterlab",
   "ipympl",
   "ipywidgets",
   "widgetsnbextension",
-  "LaueTools==3.1.19"
+  "LaueTools==3.1.25"
 ]
 
 authors = [
@@ -41,8 +41,6 @@ maintainers = [
 
 [project.optional-dependencies]
 dev = [
-  "ipython",
-  "ipywidgets",
   "pytest",
   "black",
   "flake8"

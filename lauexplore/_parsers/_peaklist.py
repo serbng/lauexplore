@@ -1,6 +1,7 @@
 import numpy as np
 import time
 from pandas import DataFrame
+from pathlib import Path
 
 class PeakList:
     
@@ -45,7 +46,7 @@ class PeakList:
         if data is None:
             self._data = np.empty((0,len(self._COLUMNS)))
             
-        elif isinstance(data, str):
+        elif isinstance(data, (str, Path)):
             self._data = np.loadtxt(data, **kwargs)
             if self._data.shape[1] != len(self._COLUMNS):
                 raise ValueError(

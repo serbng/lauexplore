@@ -1,10 +1,10 @@
 import numpy as np
-from pandas import DataFrame
+import pandas as pd
 import plotly.graph_objects as go
 import ipywidgets as widgets
 from IPython.display import display
 
-def indexation_plot(peaks: DataFrame):
+def plot_indexation(peaks: pd.DataFrame):
     # ================ Data to display in the hover menu ================
     # numpy.ndarray containing data for the tooltip
     # data will be Xexp, Yexp, h, k, l, intensity, energy, spot_index

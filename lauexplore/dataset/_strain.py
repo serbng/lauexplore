@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
 from scipy.optimize import curve_fit
 #from ..classes import FitFileSeries
-from ..utils import tabular_data
 from ._utils import (draw_colorbar, 
                      cbarticks_zero_centered, 
                      cbarticks_scientific,

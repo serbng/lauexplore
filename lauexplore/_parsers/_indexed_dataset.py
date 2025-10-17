@@ -10,7 +10,7 @@ def _parse_fitfile(file_path):
     except (TypeError, IOError, OSError):  # MODIFIED: (TypeError, IOError, OSError)
         return None
 
-class FitFileSeries:
+class IndexedDataset:
     def __init__(self, file_paths, workers=8):
         with mp.Pool(workers) as pool:
             self.fitfiles = pool.starmap(_parse_fitfile, zip(file_paths), chunksize=1)
@@ -101,7 +101,6 @@ class FitFileSeries:
     def mean_pixel_deviation(self):
         return self._collect("mean_pixel_deviation") # MODIFIED: flatten (n,) instead of (n,1)
 
-
     @property
     def boa(self):
         return self._collect("boa")
@@ -109,7 +108,6 @@ class FitFileSeries:
     @property
     def coa(self):
         return self._collect("coa")
-    
     
     @property
     def euler_angles(self):

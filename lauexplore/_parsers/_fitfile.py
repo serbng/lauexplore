@@ -1,10 +1,10 @@
 import numpy as np
 from pandas import DataFrame
 
-from ..utils.strings import clean_string, remove_newline
+from .._utils._strings import clean_string, remove_newline
 character_list = ["[", "]", "\n", "#"]
 
-from ..visualization.indexation import indexation_plot
+from ..visuals.indexation import plot_indexation
 
 # ======================== Functions to parse the file entries ========================
 
@@ -469,4 +469,4 @@ y_center: {self.CCDdict["DetectorParameters"][2]:7.2f} [px]
 """)
     
     def plot(self):
-        indexation_plot(self.peaklist)
+        plot_indexation(self.peaklist)

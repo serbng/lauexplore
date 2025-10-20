@@ -5,6 +5,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import TwoSlopeNorm
 from matplotlib.ticker import ScalarFormatter
 
+def _round_towards_zero(x, decimals=0):
+    factor = 10.0 ** decimals
+    return np.trunc(x * factor) / factor
+
 def cbarticks_zero_centered(vmin, vmax): 
     """
     Generate a TwoSlopeNorm normalization (centered at zero) and corresponding ticks for the colorbar. 
@@ -23,9 +27,9 @@ def cbarticks_zero_centered(vmin, vmax):
     if vmax < vmin:
         raise ValueError("vmin and vmax must be in ascending order")
     
-    factors = [0.25, 0.5, 0.75, 1]
-    positive_ticks = np.array([vmax*f for f in factors])
-    negative_ticks = np.array([vmin*f for f in factors[::-1]])
+    factors = [ 0.5, 1]
+    positive_ticks = _round_towards_zero(np.array([vmax*f for f in factors]),2)
+    negative_ticks = _round_towards_zero(np.array([vmin*f for f in factors[::-1]]),2)
     
     # If vmin and vmax have the same sign, adjust the onesided colorbar
     if vmin >= 0:

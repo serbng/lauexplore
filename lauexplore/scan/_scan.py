@@ -114,17 +114,17 @@ class Scan:
     @property
     def xstepsize(self) -> float:
         if self.is_linear and self.nbxpoints == 1:
-            return 0
+            return 0.
         return round(self.xsize/(self.nbxpoints-1), MAX_DIGITS_SCAN_POS)
     
     @property
     def ystepsize(self) -> float:
         if self.is_linear and self.nbypoints == 1:
-            return 0
+            return 0.
         return round(self.ysize/(self.nbypoints-1), MAX_DIGITS_SCAN_POS)
     
     @property
-    def mesh(self) -> list[np.ndarray]:
+    def mesh(self) -> list[np.ndarray, np.ndarray]:
         return np.meshgrid(self.xpoints, self.ypoints)
     
     def index_to_ij(self, index: int) -> tuple[int, int]:
@@ -163,7 +163,7 @@ class Scan:
         if self.direction == "vertical":
             return j + i * self.nbypoints
         
-        raise(DirectionError)
+        raise DirectionError
         
     def ij_to_xy(self, i: int, j: int) -> tuple[float, float]:
         if i < 0 or j < 0:

@@ -1,10 +1,9 @@
 import numpy as np
 from pandas import DataFrame
 
-from .._utils._strings import clean_string, remove_newline
+from lauexplore._utils.strings import clean_string, remove_newline
 character_list = ["[", "]", "\n", "#"]
 
-from ..visuals.indexation import plot_indexation
 
 # ======================== Functions to parse the file entries ========================
 

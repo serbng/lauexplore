@@ -5,3 +5,8 @@ from . import (
     emission
 )
 
+from ._parsers import (
+    FitFile,
+    YAMLFile,
+    Dataset
+)

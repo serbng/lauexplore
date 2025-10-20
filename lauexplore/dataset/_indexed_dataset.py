@@ -1,32 +1,67 @@
+from typing import Iterable, Literal
+from pathlib import Path
+from functools import partial
+import multiprocessing as mp
 import numpy as np
-import multiprocess as mp
 import pandas as pd
-from . import FitFile
-#from ..visualization import strain
 
-def _parse_fitfile(file_path):
+from lauexplore._parsers import parsers
+
+def _parse(filepath: str | Path, parser: object):
     try:
-        return FitFile(file_path)
-    except (TypeError, IOError, OSError):  # MODIFIED: (TypeError, IOError, OSError)
+        return parser(filepath)
+    except Exception:
         return None
 
-class IndexedDataset:
-    def __init__(self, file_paths, workers=8):
+class Dataset:
+    def __init__(self, 
+            filepaths: Iterable[str | Path], 
+            parser: Literal["fit", "yaml", "infer"] = "infer",
+            workers: int = 8
+        ):
+        
+        filepaths = list(filepaths)
+        filepaths = [Path(fpath) for fpath in filepaths]
+        
+        if parser == "fit":
+            parser_obj = parsers["fit"]
+        
+        elif parser == "yaml":
+            parser_obj = parsers["yaml"]
+            
+        else:
+            is_yaml, is_fit = False, False
+            i = 0
+            while not(is_yaml and is_fit):
+                if filepaths[i].suffix == ".fit":
+                    is_fit = True
+                    parser_obj = parsers["fit"]
+                if filepaths[i].suffix == ".yaml":
+                    is_yaml = True
+                    parser_obj = parsers["yaml"]
+                    
+        if is_yaml and is_fit:
+            raise ValueError("filepaths contains both .fit and .yaml files.")
+        
+        if not(is_yaml or is_fit):
+            raise ValueError("filepaths does not contain recognized extensions.")
+        
+        worker = partial(_parse, parser=parser_obj)
+        
         with mp.Pool(workers) as pool:
-            self.fitfiles = pool.starmap(_parse_fitfile, zip(file_paths), chunksize=1)
+            self.files = pool.map(worker, filepaths, chunksize=5)
         
         # It will turn useful when building overall class attributes
-        for fitfile in self.fitfiles:
-            if fitfile is not None:
-                self._first_existing_fitfile = fitfile
+        self._first_existing = None
+        for file in self.files:
+            if file is not None:
+                self._first_existing = file
                 break
-                
-        try:
-            self._first_existing_fitfile
-        except AttributeError: 
-            raise ValueError("None of the provided fit files could be loaded")
         
-        #self._excluded_attributes = ["filename", "corfile", "software", "timestamp", "peaklist", "CCDdict"]    
+        if self._first_existing is None:
+            raise ValueError("None of the files could be loaded. Perhaps a wrong name?")
+        
+        self.length = len(self.files)
     
     def _collect(self, attr, padding=np.nan):
         """
@@ -43,63 +78,63 @@ class IndexedDataset:
             for missing fitfiles).
         """
         # Validate attribute existence on the first valid FitFile
-        if attr not in self._first_existing_fitfile.__dict__:
+        if attr not in self._first_existing.__dict__:
             raise AttributeError(f"Attribute '{attr}' not in FitFile object.")
     
-        sample_val = getattr(self._first_existing_fitfile, attr)
+        sample_val = getattr(self._first_existing, attr)
         sample_arr = np.asarray(sample_val)
         is_numeric = (sample_arr.dtype != object) and np.issubdtype(sample_arr.dtype, np.number)
-    
-        if is_numeric:
-            # --- numeric path ---
-            if sample_arr.shape == ():
-                # Scalar case -> 1D array (N,)
-                out_vals = []
-                for ff in self.fitfiles:
-                    if ff is None:
-                        out_vals.append(padding)
-                    else:
-                        val = getattr(ff, attr)
-                        arr = np.asarray(val)
-                        if arr.shape != ():
-                            raise ValueError(
-                                f"Attribute '{attr}' expected scalar (), got {arr.shape}."
-                            )
-                        # Extract scalar (arr.item() handles numpy scalars cleanly)
-                        out_vals.append(arr.item())
-                return np.asarray(out_vals)
-    
-            else:
-                # Array case -> stack to (N, *target_shape)
-                target_shape = sample_arr.shape
-                out_arrays = []
-                for ff in self.fitfiles:
-                    if ff is None:
-                        out_arrays.append(np.full(target_shape, padding))
-                    else:
-                        arr = np.asarray(getattr(ff, attr))
-                        if arr.shape != target_shape:
-                            raise ValueError(
-                                f"Attribute '{attr}' expected shape {target_shape}, "
-                                f"got {arr.shape}."
-                            )
-                        out_arrays.append(arr)
-                return np.stack(out_arrays)
-    
-        else:
-            # --- non-numeric path -> list with None for missing ---
+        
+        N = self.length
+        
+         # --------- non-numeric path -> list with None for missing ---------
+        if not is_numeric:
+           
             out = []
-            for ff in self.fitfiles:
-                out.append(None if ff is None else getattr(ff, attr))
+            for pf in self.files:
+                out.append(None if pf is None else getattr(pf, attr))
             return out
+    
+        # -------------------------- numeric path ---------------------------
+        # Scalar case. Return 1D array, shape (N, )
+        if sample_arr.shape == ():
+            out_arr = np.full((N,), dtype=type(sample_val))
+            for i, pf in enumerate(self.files):
+                if pf is None:
+                    out_arr[i] = padding
+                    
+                else:
+                    arr = np.asarray(getattr(pf, attr))
+                    if arr.shape != ():
+                        raise ValueError(f"Attribute '{attr}' expected scalar (), got {arr.shape}.")
+                    # Extract scalar
+                    out_arr[i] = arr.item()
+            return out_arr
+
+        # Array case -> Return 3D array, shape (N, *target_shape)
+        target_shape = sample_arr.shape
+        out_arr = np.full((N,) + target_shape, dtype=sample_arr.dtype)
+        for i, pf in enumerate(self.files):
+            if pf is None:
+                out_arr[i] = np.full(target_shape, padding)
+            else:
+                arr = np.asarray(getattr(pf, attr))
+                if arr.shape != target_shape:
+                    raise ValueError(
+                        f"Attribute '{attr}' expected shape {target_shape}, "
+                        f"got {arr.shape}."
+                    )
+                out_arr[i] = arr
+        return out_arr
+
         
     @property
     def number_indexed_spots(self):
-        return self._collect("number_indexed_spots") # MODIFIED: flatten (n,) instead of (n,1)
+        return self._collect("number_indexed_spots")
 
     @property
     def mean_pixel_deviation(self):
-        return self._collect("mean_pixel_deviation") # MODIFIED: flatten (n,) instead of (n,1)
+        return self._collect("mean_pixel_deviation")
 
     @property
     def boa(self):
@@ -160,6 +195,10 @@ class IndexedDataset:
     @property
     def cstar_prime(self):
         return self._collect("cstar_prime")
+    
+    @property
+    def peaklist(self):
+        return self._collect("peaklist")
 
     def track_hkl(self, h: int, k: int, l: int) -> pd.DataFrame:
         """_summary_
@@ -179,7 +218,7 @@ class IndexedDataset:
             raise TypeError("All Miller indices must be integers")
         
         matches = []
-        columns = list(self._first_existing_fitfile.peaklist.columns)
+        columns = list(self._first_existing.peaklist.columns)
         columns.append("spot idx")
         M = len(columns)
         
@@ -207,3 +246,4 @@ class IndexedDataset:
             matches.append(match)
             
         return pd.concat(matches).convert_dtypes()
+

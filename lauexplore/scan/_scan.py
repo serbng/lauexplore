@@ -5,8 +5,8 @@ from warnings import warn
 import numpy as np
 import h5py
 
-from .._defaults import MAX_DIGITS_SCAN_POS
-from .._parsers import _h5
+from lauexplore._defaults import MAX_DIGITS_SCAN_POS
+from lauexplore._parsers import _h5
 
 DirectionError = ValueError("Expected direction to be in {'horizontal', 'vertical'}. Is it correctly set?")
 
@@ -113,10 +113,14 @@ class Scan:
     
     @property
     def xstepsize(self) -> float:
+        if self.is_linear and self.nbxpoints == 1:
+            return 0
         return round(self.xsize/(self.nbxpoints-1), MAX_DIGITS_SCAN_POS)
     
     @property
     def ystepsize(self) -> float:
+        if self.is_linear and self.nbypoints == 1:
+            return 0
         return round(self.ysize/(self.nbypoints-1), MAX_DIGITS_SCAN_POS)
     
     @property
@@ -142,7 +146,7 @@ class Scan:
     def index_to_xy(self, index: int) -> tuple[float, float]:
         i, j = self.index_to_ij(index)
         x = round(i * self.xstepsize, MAX_DIGITS_SCAN_POS)
-        y = round(j * self.xstepsize, MAX_DIGITS_SCAN_POS)
+        y = round(j * self.ystepsize, MAX_DIGITS_SCAN_POS)
         
         return x, y
     
@@ -195,5 +199,5 @@ class Scan:
         
         return i, j
     
-    def crop(self):
+    def crop(self, inplace=False):
         pass

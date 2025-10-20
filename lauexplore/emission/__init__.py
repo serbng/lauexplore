@@ -1,1 +1,1 @@
-from .fluorescence import Fluorescence
+from ._fluorescence import Fluorescence

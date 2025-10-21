@@ -117,7 +117,7 @@ class Dataset:
         # -------------------------- numeric path ---------------------------
         # Scalar case. Return 1D array, shape (N, )
         if sample_arr.shape == ():
-            out_arr = np.full((N,), dtype=type(sample_val))
+            out_arr = np.full((N,), padding)
             for i, pf in enumerate(self.files):
                 if pf is None:
                     out_arr[i] = padding
@@ -132,7 +132,7 @@ class Dataset:
 
         # Array case -> Return 3D array, shape (N, *target_shape)
         target_shape = sample_arr.shape
-        out_arr = np.full((N,) + target_shape, dtype=sample_arr.dtype)
+        out_arr = np.full((N,) + target_shape, padding)
         for i, pf in enumerate(self.files):
             if pf is None:
                 out_arr[i] = np.full(target_shape, padding)

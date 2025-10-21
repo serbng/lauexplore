@@ -2,11 +2,13 @@ from . import (
     _defaults,
     image,
     scan,
-    emission
+    emission,
+    dataset,
+    peaks,
+    plots
 )
 
 from ._parsers import (
     FitFile,
     YAMLFile,
-    Dataset
 )

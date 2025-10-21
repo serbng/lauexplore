@@ -22,15 +22,12 @@ def plot(
     if isinstance(image_data, (str, Path)):
         title = title or str(image_data)
         image_data = read(image_data)
-
-    image_data = image_data.astype(np.float64)
-    image_data = np.flipud(image_data)
     
     ny, nx = image_data.shape
     
     customdata, hovertemplate = plots.base_hovermenu(nx, ny)
-    x = np.arange(nx, dtype=np.float64)
-    y = np.arange(ny, dtype=np.float64)
+    x = np.arange(nx)
+    y = np.arange(ny)
     
     image_plot = plots.base.heatmap(
         image_data, x, y,
@@ -47,5 +44,8 @@ def plot(
         log10 = log10,
         cbartitle = cbartitle or "counts",
     )
+
+    # Flip up-down yaxis
+    image_plot.update_yaxes(autorange="reversed")
     
     return image_plot

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from lauexplore._utils import linear_chunks
 from lauexplore.scan import Scan
 from lauexplore.image import ROI, read
-from lauexplore.plots import plot_heatmap, mosaic_hovermenu
+from lauexplore.plots import heatmap, mosaic_hovermenu
 
 def _get_mosaic_line(
         linepaths: Iterable[str | Path], 
@@ -199,7 +199,7 @@ class Mosaic:
         x = np.arange(nx)
         y = np.arange(ny)
         
-        mosaic_plot = plot_heatmap(
+        mosaic_plot = heatmap(
             data, x, y,
             customdata=customdata,
             hovertemplate=hovertemplate,

@@ -6,11 +6,7 @@ import plotly.graph_objects as go
 
 from lauexplore.scan import Scan
 from lauexplore._parsers import _h5
-from lauexplore._plots import (
-    _as_grid,
-    scan_hovermenu,
-    plot_heatmap
-)
+from lauexplore import plots
 
 @dataclass
 class Fluorescence:
@@ -46,13 +42,13 @@ class Fluorescence:
         if self.scan is None:
             raise ValueError("scan must not be None.")
         
-        z = _as_grid(self.data, self.scan)
+        z = plots.base._as_grid(self.data, self.scan)
         x = np.arange(self.scan.nbxpoints)
         y = np.arange(self.scan.nbypoints)
         
-        customdata, hovertemplate = scan_hovermenu(self.scan)
+        customdata, hovertemplate = plots.scan_hovermenu(self.scan)
         
-        fluoplot = plot_heatmap(
+        fluoplot = plots.base.heatmap(
             z, x, y,
             customdata=customdata,
             hovertemplate=hovertemplate,

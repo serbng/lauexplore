@@ -2,7 +2,7 @@ from pathlib import Path
 import numpy as np
 import plotly.graph_objects as go
 
-from lauexplore._plots import plot_heatmap, base_hovermenu
+from lauexplore import plots
 from lauexplore.image import read
 
 def plot(
@@ -27,11 +27,11 @@ def plot(
     
     ny, nx = image_data.shape
     
-    customdata, hovertemplate = base_hovermenu(nx, ny)
+    customdata, hovertemplate = plots.base_hovermenu(nx, ny)
     x = np.arange(nx)
     y = np.arange(ny)
     
-    image_plot = plot_heatmap(
+    image_plot = plots.base.heatmap(
         image_data, x, y,
         customdata=customdata,
         hovertemplate=hovertemplate,

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from lauexplore._utils import linear_chunks
 from lauexplore.scan import Scan
 from lauexplore.image import ROI, read
-from lauexplore._plots import plot_heatmap, mosaic_hovermenu
+from lauexplore.plots import plot_heatmap, mosaic_hovermenu
 
 def _get_mosaic_line(
         linepaths: Iterable[str | Path], 

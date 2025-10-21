@@ -7,6 +7,32 @@ import pandas as pd
 
 from lauexplore._parsers import parsers
 
+YAML_EXTS = {".yaml", ".yml"}
+FIT_EXTS = {".fit"}
+
+def infer(filepaths: list[Path]) -> Literal["fit", "yaml"]:
+    # unique normalized extensions
+    suffixes = {p.suffix.lower() for p in filepaths}
+
+    has_fit  = any(s in  FIT_EXTS for s in suffixes)
+    has_yaml = any(s in YAML_EXTS for s in suffixes)
+
+    if has_fit and has_yaml:
+        raise ValueError("Ambiguous paths: found both .fit/.txt and .yaml/.yml extensions.")
+
+    # There exist a parsable file of one type, the other doesn't exist, no surprise extensions
+    if has_fit and not has_yaml and suffixes.issubset(FIT_EXTS):
+        return "fit"
+    elif has_yaml and not has_fit and suffixes.issubset(YAML_EXTS):
+        return "yaml"
+    else:
+        known = FIT_EXTS | YAML_EXTS
+        unknown = sorted(s for s in suffixes if s not in known)
+        raise ValueError(
+            f"Unrecognized or mixed extensions: {unknown or list(suffixes)}"
+            "Supported: .fit, .yaml, .yml"
+        )
+
 def _parse(filepath: str | Path, parser: object):
     try:
         return parser(filepath)
@@ -17,39 +43,26 @@ class Dataset:
     def __init__(self, 
             filepaths: Iterable[str | Path], 
             parser: Literal["fit", "yaml", "infer"] = "infer",
-            workers: int = 8
+            workers: int = 8,
+            chunksize: int = 5
         ):
-        
-        filepaths = list(filepaths)
-        filepaths = [Path(fpath) for fpath in filepaths]
-        
-        if parser == "fit":
-            parser_obj = parsers["fit"]
-        
-        elif parser == "yaml":
-            parser_obj = parsers["yaml"]
             
-        else:
-            is_yaml, is_fit = False, False
-            i = 0
-            while not(is_yaml and is_fit):
-                if filepaths[i].suffix == ".fit":
-                    is_fit = True
-                    parser_obj = parsers["fit"]
-                if filepaths[i].suffix == ".yaml":
-                    is_yaml = True
-                    parser_obj = parsers["yaml"]
-                    
-        if is_yaml and is_fit:
-            raise ValueError("filepaths contains both .fit and .yaml files.")
+        filepaths = [Path(p) for p in filepaths]
+        if not filepaths:
+            raise ValueError("No file paths provided.")
         
-        if not(is_yaml or is_fit):
-            raise ValueError("filepaths does not contain recognized extensions.")
-        
+        if parser not in ("fit", "yaml", "infer"):
+            raise ValueError("`parser` must be in {'fit', 'yaml', 'infer'}'")
+
+        if parser == "infer":
+            parser = infer(filepaths)
+
+        parser_obj = parsers[parser]
+                
         worker = partial(_parse, parser=parser_obj)
         
         with mp.Pool(workers) as pool:
-            self.files = pool.map(worker, filepaths, chunksize=5)
+            self.files = pool.map(worker, filepaths, chunksize=chunksize)
         
         # It will turn useful when building overall class attributes
         self._first_existing = None
@@ -62,6 +75,12 @@ class Dataset:
             raise ValueError("None of the files could be loaded. Perhaps a wrong name?")
         
         self.length = len(self.files)
+
+    def __len__(self):
+        return self.length
+
+    def __iter__(self):
+        return iter(self.files)
     
     def _collect(self, attr, padding=np.nan):
         """

@@ -15,4 +15,4 @@ from ._parsers import (
 
 # For ESRF Jupyter cluster correct rendering
 import plotly.io as pio
-plotly.renderers.default = "notebook"
+pio.renderers.default = "notebook"

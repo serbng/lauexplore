@@ -12,3 +12,7 @@ from ._parsers import (
     FitFile,
     YAMLFile,
 )
+
+# For ESRF Jupyter cluster correct rendering
+import plotly.io as pio
+plotly.renderers.default = "notebook"

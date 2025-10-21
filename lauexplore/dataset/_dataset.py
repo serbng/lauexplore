@@ -241,7 +241,7 @@ class Dataset:
         columns.append("spot idx")
         M = len(columns)
         
-        for i, ff in enumerate(self.fitfiles):
+        for i, ff in enumerate(self.files):
             if ff is not None:
                 match = ff.peaklist.query(f"h=={h} and k=={k} and l=={l}")
             

@@ -21,7 +21,7 @@ def _as_grid(arr: np.ndarray, scan: Scan) -> np.ndarray:
     
     if arr.ndim == 1:
         # Warn if the scan is complete and number of elements doesn't match
-        scan_complete = getattr(scan, "is_complete", default=False)
+        scan_complete = getattr(scan, "is_complete", False)
         if arr.size < scan.length and scan_complete:
             warn(f"1D data length {arr.size} < scan length {scan.length}. Is it intentional?", RuntimeWarning)
             

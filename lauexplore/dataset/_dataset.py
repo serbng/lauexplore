@@ -1,4 +1,4 @@
-from typing import Iterable, Literal
+from typing import Iterable, Literal, TYPE_CHECKING
 from pathlib import Path
 from functools import partial
 import multiprocessing as mp
@@ -6,6 +6,13 @@ import numpy as np
 import pandas as pd
 
 from lauexplore._parsers import parsers
+from lauexplore.scan import Scan
+from lauexplore.plots.base import _as_grid
+from lauexplore.plots.composite import tiles
+from lauexplore.plots.hovermenus import scan_hovermenu
+
+if TYPE_CHECKING:
+    import plotly.graph_objects as go
 
 YAML_EXTS = {".yaml", ".yml"}
 FIT_EXTS = {".fit"}
@@ -43,6 +50,7 @@ class Dataset:
     def __init__(self, 
             filepaths: Iterable[str | Path], 
             parser: Literal["fit", "yaml", "infer"] = "infer",
+            scan: Scan | None = None,
             workers: int = 8,
             chunksize: int = 5
         ):
@@ -75,6 +83,9 @@ class Dataset:
             raise ValueError("None of the files could be loaded. Perhaps a wrong name?")
         
         self.length = len(self.files)
+        self.existing_files = [f for f in self.files if f is not None]
+        self.nb_existing_files = len(self.existing_files)
+        self.scan = scan
 
     def __len__(self):
         return self.length
@@ -266,3 +277,126 @@ class Dataset:
             
         return pd.concat(matches).convert_dtypes()
 
+    def strain_map(self,
+            nrows: int = 2,
+            ncols: int = 3,
+            ref_frame: Literal["crystal", "sample"] = "crystal",
+            colorscale: str = "balance",
+            width: int = 1100,
+            height: int = 700,
+            hspacing: float | None = None,
+            vspacing: float | None = None,
+            cbar_title: str = "× 1e-4",
+            cbar_width: int = 20,
+            cbar_padding: int = 0,
+            subplot_titles: list[str] | None = None,
+        ) -> "go.Figure":
+
+        if ref_frame not in ("crystal", "sample"):
+            raise ValueError(
+                "Reference frame must be in {'crystal', 'sample'}. "
+                f"Got {ref_frame}."
+            )
+            
+        if self.scan is None:
+            raise ValueError("In order to plot you must specify the scan object.")
+
+        if ref_frame == "crystal":
+            strain_tensors = self.deviatoric_strain_crystal_frame
+            
+        if ref_frame == "sample":
+            strain_tensors = self.deviatoric_strain_sample_frame
+            
+        strain_components = [
+            strain_tensors[:,0,0], # e_xx
+            strain_tensors[:,1,1], # e_yy
+            strain_tensors[:,2,2], # e_zz
+            strain_tensors[:,0,1], # e_xy
+            strain_tensors[:,0,2], # e_xz
+            strain_tensors[:,1,2]  # e_yz
+        ]
+        
+        strain_components = [_as_grid(c, self.scan) * 1e4 for c in strain_components]
+        
+        default_titles = [
+            "$\\varepsilon_{xx}$",
+            "$\\varepsilon_{yy}$",
+            "$\\varepsilon_{zz}$",
+            "$\\varepsilon_{xy}$",
+            "$\\varepsilon_{xz}$",
+            "$\\varepsilon_{yz}$"
+        ]
+        subplot_titles = default_titles if subplot_titles is None else subplot_titles
+        
+        customdata, hovertemplate = scan_hovermenu(self.scan)
+        
+        strain_plot = tiles(
+            strain_components,
+            x=self.scan.xpoints * 1e3,
+            y=self.scan.ypoints * 1e3,
+            nrows=nrows,
+            ncols=ncols,
+            colorscale=colorscale,
+            width=width,
+            height=height,
+            customdata=customdata,
+            hovertemplate=hovertemplate,
+            hspacing=hspacing,
+            vspacing=vspacing,
+            cbar_title=cbar_title,
+            cbar_width=cbar_width,
+            cbar_padding=cbar_padding,
+            subplot_titles=subplot_titles
+        )
+        
+        return strain_plot
+    
+    def indexation_quality(self,
+            colorscale: str = "balance",
+            width: int = 800,
+            height: int = 400,
+            hspacing: float | None = 0.15,
+            vspacing: float | None = 0,
+            cbar_title: str | None = None ,
+            cbar_width: int = 20,
+            cbar_padding: int = 0,
+            subplot_titles: list[str] | None = None,
+        ) -> "go.Figure":
+
+        if self.scan is None:
+            raise ValueError("In order to plot you must specify the scan object.")
+        
+        data_toplot = [
+            _as_grid(self.number_indexed_spots, self.scan),
+            _as_grid(self.mean_pixel_deviation, self.scan)
+        ]
+        
+        default_titles = [
+            "Number of indexed spots",
+            "Mean pixel deviation"
+        ]
+        
+        subplot_titles = default_titles if subplot_titles is None else subplot_titles
+        
+        customdata, hovertemplate = scan_hovermenu(self.scan)
+        
+        quality_plot = tiles(
+            data_toplot,
+            x=self.scan.xpoints * 1e3,
+            y=self.scan.ypoints * 1e3,
+            nrows=1,
+            ncols=2,
+            colorscale=colorscale,
+            width=width,
+            height=height,
+            customdata=customdata,
+            hovertemplate=hovertemplate,
+            hspacing=hspacing,
+            vspacing=vspacing,
+            cbar_title=cbar_title,
+            cbar_width=cbar_width,
+            cbar_padding=cbar_padding,
+            subplot_titles=subplot_titles
+        )
+        
+        return quality_plot

@@ -115,201 +115,67 @@ def strain_map(x, y, strain_tensors, **kwargs):
     fig.tight_layout()
     return fig, axes
 
-# def strain4map(sample_x: np.ndarray, 
-#                sample_y: np.ndarray, 
-#                ffs: FitFileSeries,
-#                multiplier: float = 1e4, 
-#                scale: str = 'default',
-#                reshape_order: str = 'C',
-#                summary: bool = False,
-#                cbar_norm: bool = False,
-#                **kwargs):
-#     """Plot four strain components: (εxx+εyy)/2, εzz, εxy, (εxz+εyz)/2.
-    
-#     Parameters
-#     ----------
-#     sample_x        np.ndarray: 2D mesh of the x positions of the xech motor
-#     sample_y        np.ndarray: 2D mesh of the y positions of the yech motor
-#     ffs          FitFileSeries: Object containing the information of a folder of parsed .fit files
-#     multiplier           float: Value multiplied to each strain component. Defaults to 1e4
-#     scale                  str: Defines the colorbar scale. Options: 'default', 'meanNsigma', 'uniform', 'other'.
-#     reshape_order          str: Defines the reshape order for the data array. Defaults to 'C'.
-#     summary               bool: If True, prints a summary table with statistical values.
-#     cbar_norm             bool: If True, centers the colorbar at 0.
-    
-#     Keyword arguments
-#     ----------
-#     **kwargs : dict - passed to matplotlib.pyplot.pcolormesh
-    
-#         Additional options:
-#         - cbar_width : str, optional
-#             Defines the colorbar size as a percentage of the plot. Default is '10%'.
-    
-#     Returns:
-#     --------
-#     tuple
-#         (fig, axes) matplotlib figure and axis objects.
-#     """
-    
-#     cbar_width = kwargs.pop('cbar_width', '10')
 
-#     fig, axes = plt.subplots(2, 2, figsize=(10, 8))  # 2x2 grid for four components
-    
-#     normalized_strain = ffs.deviatoric_strain_crystal_frame * multiplier
-    
-#     # Extracting strain components
-#     ε_xx = normalized_strain[:, 0, 0]
-#     ε_yy = normalized_strain[:, 1, 1]
-#     ε_zz = normalized_strain[:, 2, 2]
-#     ε_xy = normalized_strain[:, 0, 1]
-#     ε_xz = normalized_strain[:, 0, 2]
-#     ε_yz = normalized_strain[:, 1, 2]
-    
-#     # Computing the required strain components
-#     strain_components = [
-#         (ε_xx + ε_yy) / 2,   # Mean in-plane strain
-#         ε_zz,                # Out-of-plane strain
-#         ε_xy,                # Shear component
-#         (ε_xz + ε_yz) / 2    # Mean out-of-plane shear
-#     ]
-    
-#     titles = [r'$(\varepsilon_{xx} + \varepsilon_{yy})/2$', r'$\varepsilon_{zz}$', r'$\varepsilon_{xy}$', r'$(\varepsilon_{xz} + \varepsilon_{yz})/2$']
-    
 
-#     means = np.nanmean(strain_components, axis=1)
-#     std_devs = np.nanstd(strain_components, axis=1)
-#     maxima = np.nanmax(strain_components, axis=1)
-#     minima = np.nanmin(strain_components, axis=1)
+def strain4map(x, y, strain_tensors, **kwargs):
 
-#     if summary:
-#         table_col = ['µ', 'σ', 'µ - 3σ', 'µ + 3σ', 'Min', 'Max']
-#         table_row = ['(εxx+εyy)/2', 'εzz', 'εxy', '(εxz+εyz)/2']
-#         table_data = np.vstack((means, 
-#                                 std_devs, 
-#                                 means - 3 * std_devs,
-#                                 means + 3 * std_devs,
-#                                 minima,
-#                                 maxima)).T
-
-#         print(tabular_data(table_col, table_row, table_data))
-
-#     # Define color scale ranges
-#     if scale == 'default':
-#         plotvmax = [None] * 4
-#         plotvmin = [None] * 4
-    
-#     elif scale.startswith('mean') and scale.endswith('sigma'):
-#         std_mul = float(scale.split('mean')[-1].split('sigma')[0]) 
-#         plotvmax = [means[i] + std_mul * std_devs[i] for i in range(4)]
-#         plotvmin = [means[i] - std_mul * std_devs[i] for i in range(4)]
-        
-#     elif scale == 'uniform':
-#         plotvmax = np.abs([minima.min(), maxima.max()]).max()
-#         plotvmin = -plotvmax
-
-#         plotvmin = [plotvmin] * 4
-#         plotvmax = [plotvmax] * 4
-    
-#     elif scale == 'other':
-#         try:
-#             plotvmin = [kwargs.pop('vmin')] * 4
-#             plotvmax = [kwargs.pop('vmax')] * 4
-#         except KeyError:
-#             raise KeyError("If you select scale = 'other', you must specify vmin and vmax")
-    
-#     else:
-#         raise ValueError("scale must be in the list ['default', 'meanNsigma', 'uniform', 'other']")
-
-#     # Plot each strain component
-#     for axidx, data, title, plotmin, plotmax in zip(np.ndindex(axes.shape), 
-#                                                     strain_components, 
-#                                                     titles, 
-#                                                     plotvmin, 
-#                                                     plotvmax):
-
-#         norm = TwoSlopeNorm(vmin=plotmin, vcenter=0, vmax=plotmax) if cbar_norm else None
-#         cbar_ticks = np.round([plotmin+0.1, plotmin/2, 0, plotmax/2, plotmax-0.1], 1) if cbar_norm else None
-        
-#         image = axes[axidx].pcolormesh(sample_x, 
-#                                        sample_y, 
-#                                        data.reshape(sample_x.shape, order=reshape_order), 
-#                                        vmin=None if cbar_norm else plotmin, 
-#                                        vmax=None if cbar_norm else plotmax,
-#                                        norm=norm,
-#                                        **kwargs)
-        
-#         draw_colorbar(image, cbar_width, ticks=cbar_ticks)
-
-#         if axidx[1] == 0:
-#             axes[axidx].set_ylabel('Position [µm]')
-#         if axidx[0] == axes.shape[0] - 1:
-#             axes[axidx].set_xlabel('Position [µm]')
-#         axes[axidx].set_title(title)
-#         axes[axidx].set_aspect('equal')
-        
-#     fig.tight_layout()
-
-#     return fig, axes
-    
-def strain4map(
-    x, y, strain_tensors, *,
-    multiplier=1.0,
-    reshape_order='C',
-    scale='default',          # 'default' | 'uniform' | 'mean3sigma' (or meanNsigma)
-    cbar_norm=False,
-    cbar_width=5,
-    figsize=(5, 10),
-    ncols=2,
-    nrows=2,
-    **kwargs                  # passed to plt.pcolormesh
-):
     """
-    Plot four strain component maps from a list/array of 3×3 strain tensors:
+    Plot four strain component maps from a list of 3×3 strain tensors:
       (εxx+εyy)/2, εzz, εxy, (εxz+εyz)/2.
 
     Parameters
     ----------
-    x, y : np.ndarray
-        2D coordinate grids (same shape), typically from np.meshgrid.
-    strain_tensors : array-like, shape (N, 3, 3)
-        One 3×3 tensor per grid point (flattened order must match x.ravel()).
-    multiplier : float, default 1.0
-        Factor applied to all components (e.g., 1e4).
-    reshape_order : {'C','F','A'}, default 'C'
-        Order used for reshaping 1D components back to the 2D grid.
-    scale : str, default 'default'
-        - 'default' : independent vmin/vmax per subplot
-        - 'uniform' : same symmetric limits across all subplots
-        - 'meanNsigma' (e.g., 'mean3sigma'): vmin/vmax = mean ± N·std for each subplot
-    cbar_norm : bool, default False
-        If True, centers colormap at zero using TwoSlopeNorm.
-    cbar_width : float, default 5
-        Colorbar width as a percentage of axes width (depends on your draw_colorbar helper).
-    figsize : tuple, default (10, 8)
-        Figure size in inches.
-    ncols, nrows : int, default 2, 2
-        Subplot grid layout.
+    x, y               [np.ndarray]: 2D coordinate grids (same shape), typically from np.meshgrid.
+    strain_tensors list[np.ndarray]: list/array of 3×3 strain tensors corresponding to each grid point.
+
+    Keyword Arguments
+    -----------------
+    multiplier            [float]: Factor to multiply each strain component. Default 1.0.
+    reshape_order {'C','F','A'}: Order for numpy.reshape to match the grid shape. Default 'C'.
+        scale {'mean[sigma_value]sigma', 'uniform', 'default'}: default 'default'
+            Color scaling mode:
+              - 'mean[sigma_value]sigma': Set limits as mean ± (sigma_value × std). E.g., 'mean3sigma'.
+              - 'uniform': Apply same symmetric limits to all components (±global max).
+    cbar_width            [float]: Width of the colorbar, in % w.r.t. axes width. Default 5.
+    cbar_norm              [bool]: If True, center the colorbar at zero. Default False.
+    ncols                   [int]: Number of columns in the subplots. Default 2.
+    nrows                   [int]: Number of rows in the subplots. Default 2.
+    figsize       tuple[int,int]: Figure size in inches. Default (5, 10).
+
+    Additional kwargs are passed to matplotlib.pyplot.pcolormesh.
 
     Returns
     -------
-    fig : matplotlib.figure.Figure
-    axes : np.ndarray
-        Array of Axes with shape (nrows*ncols,).
+    fig   [matplotlib.figure.Figure]: The figure object containing the subplots.
+    axes                [np.ndarray]: Flattened array of subplot axes.
     """
+    # ---- extract kwargs aligned with strain_map ----
+    multiplier     = kwargs.pop('multiplier', 1.0)
+    reshape_order  = kwargs.pop('reshape_order', 'C')
+    scale          = kwargs.pop('scale', 'default')
+    cbar_width     = kwargs.pop('cbar_width', 5)
+    cbar_norm      = kwargs.pop('cbar_norm', False)
+    figsize        = kwargs.pop('figsize', (5, 10))
+    ncols          = kwargs.pop('ncols', 4)
+    nrows          = kwargs.pop('nrows', 1)
+
+    cbar_ticks     = None  # will be set by cbarticks_zero_centered if cbar_norm=True
+
     # ---- basic checks ----
     if x.shape != y.shape:
         raise ValueError("x and y must have the same 2D shape.")
-    N = x.size
+    npoints = x.size
 
     strain = np.asarray(strain_tensors, dtype=float)
     if strain.ndim != 3 or strain.shape[1:] != (3, 3):
         raise ValueError("strain_tensors must have shape (N, 3, 3).")
-    if strain.shape[0] != N:
-        raise ValueError("Number of tensors (N) must match x.size == y.size.")
+    if strain.shape[0] != npoints:
+        raise ValueError("Length of strain_tensors does not match the total number of grid points in x/y.")
 
-    # ---- scale and extract components ----
-    strain *= multiplier
+    # ---- scale tensors ----
+    strain = strain * multiplier
 
+    # ---- components (flattened) ----
     exx = strain[:, 0, 0]
     eyy = strain[:, 1, 1]
     ezz = strain[:, 2, 2]
@@ -324,71 +190,206 @@ def strain4map(
         r'$(\varepsilon_{xz}+\varepsilon_{yz})/2$': (exz + eyz) / 2.0,
     }
 
-    # reshape back to 2D maps
-    comps2d = {k: v.reshape(x.shape, order=reshape_order) for k, v in components.items()}
+    # ---- reshape back to 2D ----
+    components_2d = {k: v.reshape(x.shape, order=reshape_order) for k, v in components.items()}
 
-    # ---- global limits for 'uniform' ----
+    # ---- uniform scaling (global across all four maps) ----
     if scale == 'uniform':
-        global_max = max(np.nanmax(np.abs(a)) for a in comps2d.values())
+        global_max = max(np.nanmax(np.abs(arr)) for arr in components_2d.values())
         vmin_u, vmax_u = -global_max, global_max
 
     # ---- figure ----
-    fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, sharex=True, sharey=True)
     axes = axes.flatten()
 
-    for i, (title, data2d) in enumerate(comps2d.items()):
-        single_kwargs = kwargs.copy()
+    for i, (label, data2d) in enumerate(components_2d.items()):
+        singleplot_kwargs = kwargs.copy()
 
         if scale == 'default':
             vmin = kwargs.get('vmin', np.nanmin(data2d))
             vmax = kwargs.get('vmax', np.nanmax(data2d))
-            single_kwargs.update({'vmin': vmin, 'vmax': vmax})
+            singleplot_kwargs.update({'vmin': vmin, 'vmax': vmax})
 
         elif isinstance(scale, str) and scale.startswith('mean') and scale.endswith('sigma'):
-            # parse "meanNsigma" (e.g., "mean3sigma")
+            # parse "meanNsigma", e.g., "mean3sigma"
             try:
                 std_mul = float(scale[len('mean'):-len('sigma')])
             except ValueError:
                 std_mul = 3.0
-            mean = np.nanmean(data2d)
-            std  = np.nanstd(data2d)
-            vmin, vmax = mean - std_mul*std, mean + std_mul*std
-            single_kwargs.update({'vmin': vmin, 'vmax': vmax})
+            vmin, vmax = limits_meanNstd(data2d, std_mul)
+            singleplot_kwargs.update({'vmin': vmin, 'vmax': vmax})
 
         elif scale == 'uniform':
-            single_kwargs.update({'vmin': vmin_u, 'vmax': vmax_u})
+            singleplot_kwargs.update({'vmin': vmin_u, 'vmax': vmax_u})
 
-        # zero-centered normalization if requested
+        # zero-centered normalization if requested (re-using your helper)
         if cbar_norm:
-            vmin_c = single_kwargs.get('vmin', np.nanmin(data2d))
-            vmax_c = single_kwargs.get('vmax', np.nanmax(data2d))
-            norm = TwoSlopeNorm(vmin=vmin_c, vcenter=0, vmax=vmax_c)
-            single_kwargs['norm'] = norm
-            single_kwargs['vmin'] = None
-            single_kwargs['vmax'] = None
+            norm, cbar_ticks = cbarticks_zero_centered(
+                singleplot_kwargs.get('vmin', np.nanmin(data2d)),
+                singleplot_kwargs.get('vmax', np.nanmax(data2d)),
+            )
+            singleplot_kwargs['norm'] = norm
+            singleplot_kwargs['vmin'] = None
+            singleplot_kwargs['vmax'] = None
 
-        mesh = axes[i].pcolormesh(x, y, data2d, **single_kwargs)
-        axes[i].set_title(title)
+        # ---- plot ----
+        mesh = axes[i].pcolormesh(x, y, data2d, **singleplot_kwargs)
+        axes[i].set_title(label)
         axes[i].set_aspect('equal')
 
-        # assumes your helper exists
-        draw_colorbar(mesh, width=cbar_width)
+        # your shared helper
+        draw_colorbar(mesh, width=cbar_width, ticks=cbar_ticks)
 
+        # optional axes labels (like in your 6-map version)
         if i % ncols == 0:
             axes[i].set_ylabel('Position [µm]')
         if i // ncols == nrows - 1:
             axes[i].set_xlabel('Position [µm]')
 
-    # nice multiplier exponent in title (works if multiplier is a power of 10)
-    try:
-        expo = -np.log10(multiplier)
-        title_scale = f"×10$^{{{expo:.1f}}}$"
-    except Exception:
-        title_scale = f"×({multiplier:g})"
-
-    fig.suptitle(f"Deviatoric strain {title_scale}")
+    # ---- title with multiplier power-of-10 like strain_map ----
+    fig.suptitle(f"Deviatoric strain components ($\\times 10^{{{-np.log10(multiplier):.1f}}}$)")
     fig.tight_layout()
     return fig, axes
+
+    
+# def strain4map(
+#     x, y, strain_tensors, *,
+#     multiplier=1.0,
+#     reshape_order='C',
+#     scale='default',          # 'default' | 'uniform' | 'mean3sigma' (or meanNsigma)
+#     cbar_norm=False,
+#     cbar_width=5,
+#     figsize=(5, 10),
+#     ncols=2,
+#     nrows=2,
+#     **kwargs                  # passed to plt.pcolormesh
+# ):
+#     """
+#     Plot four strain component maps from a list/array of 3×3 strain tensors:
+#       (εxx+εyy)/2, εzz, εxy, (εxz+εyz)/2.
+
+#     Parameters
+#     ----------
+#     x, y : np.ndarray
+#         2D coordinate grids (same shape), typically from np.meshgrid.
+#     strain_tensors : array-like, shape (N, 3, 3)
+#         One 3×3 tensor per grid point (flattened order must match x.ravel()).
+#     multiplier : float, default 1.0
+#         Factor applied to all components (e.g., 1e4).
+#     reshape_order : {'C','F','A'}, default 'C'
+#         Order used for reshaping 1D components back to the 2D grid.
+#     scale : str, default 'default'
+#         - 'default' : independent vmin/vmax per subplot
+#         - 'uniform' : same symmetric limits across all subplots
+#         - 'meanNsigma' (e.g., 'mean3sigma'): vmin/vmax = mean ± N·std for each subplot
+#     cbar_norm : bool, default False
+#         If True, centers colormap at zero using TwoSlopeNorm.
+#     cbar_width : float, default 5
+#         Colorbar width as a percentage of axes width (depends on your draw_colorbar helper).
+#     figsize : tuple, default (10, 8)
+#         Figure size in inches.
+#     ncols, nrows : int, default 2, 2
+#         Subplot grid layout.
+
+#     Returns
+#     -------
+#     fig : matplotlib.figure.Figure
+#     axes : np.ndarray
+#         Array of Axes with shape (nrows*ncols,).
+#     """
+#     # ---- basic checks ----
+#     if x.shape != y.shape:
+#         raise ValueError("x and y must have the same 2D shape.")
+#     N = x.size
+
+#     strain = np.asarray(strain_tensors, dtype=float)
+#     if strain.ndim != 3 or strain.shape[1:] != (3, 3):
+#         raise ValueError("strain_tensors must have shape (N, 3, 3).")
+#     if strain.shape[0] != N:
+#         raise ValueError("Number of tensors (N) must match x.size == y.size.")
+
+#     # ---- scale and extract components ----
+#     strain *= multiplier
+
+#     exx = strain[:, 0, 0]
+#     eyy = strain[:, 1, 1]
+#     ezz = strain[:, 2, 2]
+#     exy = strain[:, 0, 1]
+#     exz = strain[:, 0, 2]
+#     eyz = strain[:, 1, 2]
+
+#     components = {
+#         r'$(\varepsilon_{xx}+\varepsilon_{yy})/2$': (exx + eyy) / 2.0,
+#         r'$\varepsilon_{zz}$':                      ezz,
+#         r'$\varepsilon_{xy}$':                      exy,
+#         r'$(\varepsilon_{xz}+\varepsilon_{yz})/2$': (exz + eyz) / 2.0,
+#     }
+
+#     # reshape back to 2D maps
+#     comps2d = {k: v.reshape(x.shape, order=reshape_order) for k, v in components.items()}
+
+#     # ---- global limits for 'uniform' ----
+#     if scale == 'uniform':
+#         global_max = max(np.nanmax(np.abs(a)) for a in comps2d.values())
+#         vmin_u, vmax_u = -global_max, global_max
+
+#     # ---- figure ----
+#     fig, axes = plt.subplots(nrows, ncols, figsize=figsize, sharey=True, sharex=True)
+#     axes = axes.flatten()
+
+#     for i, (title, data2d) in enumerate(comps2d.items()):
+#         single_kwargs = kwargs.copy()
+
+#         if scale == 'default':
+#             vmin = kwargs.get('vmin', np.nanmin(data2d))
+#             vmax = kwargs.get('vmax', np.nanmax(data2d))
+#             single_kwargs.update({'vmin': vmin, 'vmax': vmax})
+
+#         elif isinstance(scale, str) and scale.startswith('mean') and scale.endswith('sigma'):
+#             # parse "meanNsigma" (e.g., "mean3sigma")
+#             try:
+#                 std_mul = float(scale[len('mean'):-len('sigma')])
+#             except ValueError:
+#                 std_mul = 3.0
+#             mean = np.nanmean(data2d)
+#             std  = np.nanstd(data2d)
+#             vmin, vmax = mean - std_mul*std, mean + std_mul*std
+#             single_kwargs.update({'vmin': vmin, 'vmax': vmax})
+
+#         elif scale == 'uniform':
+#             single_kwargs.update({'vmin': vmin_u, 'vmax': vmax_u})
+
+#         # zero-centered normalization if requested
+#         if cbar_norm:
+#             vmin_c = single_kwargs.get('vmin', np.nanmin(data2d))
+#             vmax_c = single_kwargs.get('vmax', np.nanmax(data2d))
+#             norm = TwoSlopeNorm(vmin=vmin_c, vcenter=0, vmax=vmax_c)
+#             single_kwargs['norm'] = norm
+#             single_kwargs['vmin'] = None
+#             single_kwargs['vmax'] = None
+
+#         mesh = axes[i].pcolormesh(x, y, data2d, **single_kwargs)
+#         axes[i].set_title(title)
+#         axes[i].set_aspect('equal')
+
+#         # assumes your helper exists
+#         draw_colorbar(mesh, width=cbar_width)
+
+#         if i % ncols == 0:
+#             axes[i].set_ylabel('Position [µm]')
+#         if i // ncols == nrows - 1:
+#             axes[i].set_xlabel('Position [µm]')
+
+#     # nice multiplier exponent in title (works if multiplier is a power of 10)
+#     try:
+#         expo = -np.log10(multiplier)
+#         title_scale = f"×10$^{{{expo:.1f}}}$"
+#     except Exception:
+#         title_scale = f"×({multiplier:g})"
+
+#     fig.suptitle(f"Deviatoric strain {title_scale}")
+#     fig.tight_layout()
+#     return fig, axes
 # def strain_histogram(ffs: FitFileSeries, 
 #                      multiplier: float = 1e4,
 #                      fit: bool = False, **kwargs):

@@ -4,7 +4,7 @@ lauexplore is a Python library for *visualization* and *post-processing* of Laue
 
 The data is collected with the LAUEMAX instrument at beamline BM32 of the European Synchrotron Radiation Facility (ESRF) in Grenoble. The raw Laue patterns are analyzed with the in-house developed [lauetools](https://github.com/BM32ESRF/lauetools) software.
 
-The library is designed upon the lauetools ecosystem to manage its outputs for raster scans. It is aimed at 
+The library is designed upon the lauetools ecosystem to manage its outputs for raster scans.
 
 ## Installation
 

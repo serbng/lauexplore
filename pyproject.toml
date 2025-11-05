@@ -19,7 +19,7 @@ dependencies = [
   "fabio",
   "scikit-image",
   "scikit-learn",
-  "plotly",
+  "plotly==6.*",
   "kaleido",
   "anywidget>=0.9",
   "ipykernel",

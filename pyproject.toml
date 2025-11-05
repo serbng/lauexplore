@@ -11,16 +11,15 @@ license = { text = "MIT" }
 requires-python = ">=3.8"
 
 dependencies = [
-  "numpy==2.0.*",
-  "scipy==1.13.*",
+  "numpy",
+  "scipy",
   "matplotlib==3.9.*",
-  "pandas==2.2.*",
-  "h5py==3.11.*",
-  "fabio==2024.9.*",
-  "scikit-image==0.24.*",
-  "scikit-learn==1.5.*",
-  "wxpython==4.2.*",
-  "plotly==6.*",
+  "pandas",
+  "h5py",
+  "fabio",
+  "scikit-image",
+  "scikit-learn",
+  "plotly",
   "kaleido",
   "anywidget>=0.9",
   "ipykernel",
@@ -28,7 +27,7 @@ dependencies = [
   "ipympl",
   "ipywidgets",
   "widgetsnbextension",
-  "LaueTools==3.1.25"
+  "lauetools==3.1.19"
 ]
 
 authors = [

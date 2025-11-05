@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lauexplore"
 version = "1.0.0"
-description = "Interactive visualization of "
+description = "Post processing tools for data produced by the lauetools package."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.8"

@@ -36,5 +36,20 @@ def get_fluo(h5f: h5py.File, material: str, scan_number: int = 1) -> np.ndarray:
     except KeyError:
         raise ValueError(f"Can't find fluorescence data of {material}.")
     return fluo
+
+
+def get_xeol(h5f: h5py.File, scan_number: int = 1) -> np.ndarray:
+    key = f"{scan_number}.1/measurement/qepro_det0"
+    try:
+        xeol = h5f[key][::]
+    except KeyError:
+        raise ValueError(f"Can't find xeol data in h5 file.")
+    return xeol
     
-    
+def get_monitor(h5f: h5py.File, scan_number: int = 1) -> np.ndarray:
+    key = f"{scan_number}.1/measurement/mon"
+    try:
+        mon = h5f[key][()]
+    except KeyError:
+        raise ValueError(f"Can't find monitor data in h5 file.")
+    return mon

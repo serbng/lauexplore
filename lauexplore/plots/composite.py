@@ -73,6 +73,8 @@ def tiles(
     cbar_width: int = 20,
     cbar_padding: int = 0,
     subplot_titles: list[str] | None = None,
+    mask: np.ndarray | None = None,
+    
 ) -> go.Figure:
     """
     Minimal version with per-subplot colorbars:
@@ -98,7 +100,7 @@ def tiles(
             hspacing = inf_h
         if vspacing is None:
             vspacing = inf_v    
-
+                  
     fig = make_subplots(
         rows=nrows,
         cols=ncols,

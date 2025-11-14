@@ -18,12 +18,16 @@ class Fluorescence:
     def from_h5(cls, 
             filepath: str | Path, 
             material: str, 
-            scan_number: int = 1, 
+            scan_number: int = 1,
+            normalize_to_monitor=True,
         ):
         with h5py.File(filepath) as h5f:
             data = _h5.get_fluo(h5f, material, scan_number)
             
         scan = Scan.from_h5(filepath, scan_number)
+        if normalize_to_monitor: 
+            mon = scan.monitor_data
+            data  = data/mon
             
         return cls(data, material, scan)
     

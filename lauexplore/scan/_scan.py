@@ -5,6 +5,8 @@ from warnings import warn
 import numpy as np
 import h5py
 
+
+from lauexplore.constants.motors import AXIS_FROM_MOTOR
 from lauexplore._defaults import MAX_DIGITS_SCAN_POS
 from lauexplore._parsers import _h5
 
@@ -21,7 +23,7 @@ class Scan:
     
     @classmethod
     def from_title(cls, title: str):
-        """Initialize Scan class using the title reported in the h5 file.
+        """Initialize Scan class using the title reported in the h5 file._h5
         Typical title:
         "amesh yech -6.16040 -6.12540 70 xech 26.80480 26.83980 70 0.15"
 
@@ -39,6 +41,9 @@ class Scan:
          motor2_nbintervals,
          count_time) = title.split()
         
+        axis1 = AXIS_FROM_MOTOR.get(motor1)
+        axis2 = AXIS_FROM_MOTOR.get(motor2)
+        
         motor1_lim1 = float(motor1_lim1)
         motor1_lim2 = float(motor1_lim2)
         motor2_lim1 = float(motor2_lim1)
@@ -49,28 +54,26 @@ class Scan:
         
         count_time = float(count_time)
         
-        if motor1 == "xech" and motor2 == "yech":
+        if axis1 == "x" and axis2 == "y":
+            direction = "horizontal"
             xsize = motor1_lim2 - motor1_lim1
             ysize = motor2_lim2 - motor2_lim1
             nbxpoints = motor1_nbintervals + 1
             nbypoints = motor2_nbintervals + 1
-            direction = "horizontal"
-            
-        elif motor1 == "yech" and motor2 == "xech":
+
+        elif axis1 == "y" and axis2 == "x":
+            direction = "vertical"
             xsize = motor2_lim2 - motor2_lim1
             ysize = motor1_lim2 - motor1_lim1
             nbxpoints = motor2_nbintervals + 1
             nbypoints = motor1_nbintervals + 1
-            direction = "vertical"
-            
+
         else:
-            ValueError(
-                f"Expected motors to be in {'xech', 'yech'}, got ({motor1}, {motor2})"
-            )
-            
-        xsize = round(xsize, MAX_DIGITS_SCAN_POS)
-        ysize = round(ysize, MAX_DIGITS_SCAN_POS)
-        
+            raise ValueError(f"Unsupported motor combination: {motor1}, {motor2}")
+
+            xsize = round(xsize, MAX_DIGITS_SCAN_POS)
+            ysize = round(ysize, MAX_DIGITS_SCAN_POS)
+
         return cls(xsize, ysize, nbxpoints, nbypoints, direction, count_time)
             
     @classmethod
@@ -82,6 +85,7 @@ class Scan:
             scan.end_time = _h5.get_end_time(h5f, scan_number)
             scan.duration = _h5.get_duration(h5f, scan_number)
             end_reason = _h5.get_end_reason(h5f, scan_number)
+            scan.monitor_data = _h5.get_monitor(h5f, scan_number)
             
         scan.is_complete = True if end_reason == "SUCCESS" else False
         
@@ -126,6 +130,7 @@ class Scan:
     @property
     def mesh(self) -> list[np.ndarray, np.ndarray]:
         return np.meshgrid(self.xpoints, self.ypoints)
+
     
     def index_to_ij(self, index: int) -> tuple[int, int]:
         if index < 0 or index > self.length:

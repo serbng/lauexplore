@@ -86,6 +86,8 @@ class Dataset:
         self.existing_files = [f for f in self.files if f is not None]
         self.nb_existing_files = len(self.existing_files)
         self.scan = scan
+     
+        
 
     def __len__(self):
         return self.length
@@ -156,7 +158,11 @@ class Dataset:
                     )
                 out_arr[i] = arr
         return out_arr
+    
 
+    def strain(self, 
+                ):
+        pass
         
     @property
     def number_indexed_spots(self):
@@ -290,6 +296,7 @@ class Dataset:
             cbar_width: int = 20,
             cbar_padding: int = 0,
             subplot_titles: list[str] | None = None,
+            mask: np.ndarray | None = None,
         ) -> "go.Figure":
 
         if ref_frame not in ("crystal", "sample"):
@@ -316,6 +323,9 @@ class Dataset:
             strain_tensors[:,1,2]  # e_yz
         ]
         
+        if mask is not None:
+            strain_components = [np.where(mask, strain_tensor, np.nan) for strain_tensor in strain_components]
+             
         strain_components = [_as_grid(c, self.scan) * 1e4 for c in strain_components]
         
         default_titles = [
@@ -346,7 +356,8 @@ class Dataset:
             cbar_title=cbar_title,
             cbar_width=cbar_width,
             cbar_padding=cbar_padding,
-            subplot_titles=subplot_titles
+            subplot_titles=subplot_titles,
+            mask=mask
         )
         
         return strain_plot
